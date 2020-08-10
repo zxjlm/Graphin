@@ -154,14 +154,12 @@ function doPan(pan: { x: number; y: number } | undefined, instance: GraphType) {
 }
 
 /**
- * 关闭局部刷新
- * TODO: 目前@antv/g的局部刷新还不稳定，仍然存在鬼影问题，暂时关闭
+ * 开启局部刷新
  *
  * @param {GraphType} instance
  */
-function closeLocalRefresh(instance: GraphType) {
-  // close local refresh issue to avoid clip ghost
-  instance.get('canvas').set('localRefresh', false);
+function switchLocalRefresh(instance: GraphType, on = true) {
+  instance.get('canvas').set('localRefresh', on);
 }
 
 export const initGraphAfterRender = (props: GraphinProps, graphDOM: HTMLDivElement, instance: GraphType) => {
@@ -240,7 +238,7 @@ function init(props: GraphinProps, graphDOM: HTMLDivElement, behaviorsMode: Beha
 const initGraph = (props: GraphinProps, graphDOM: HTMLDivElement, behaviorsMode: BehaviorsMode) => {
   const [instance, options] = init(props, graphDOM, behaviorsMode);
 
-  closeLocalRefresh(instance);
+  switchLocalRefresh(instance);
   doPan(options.pan, instance);
   doZoom(options.zoom, instance, options.pan);
 
