@@ -159,6 +159,7 @@ function doPan(pan: { x: number; y: number } | undefined, instance: GraphType) {
  * @param {GraphType} instance
  */
 function switchLocalRefresh(instance: GraphType, on = true) {
+  // close local refresh issue to avoid clip ghost
   instance.get('canvas').set('localRefresh', on);
 }
 
@@ -207,7 +208,7 @@ function init(props: GraphinProps, graphDOM: HTMLDivElement, behaviorsMode: Beha
     brush: !disableBrush,
     select: !disableClick,
     node: {
-      drag: !!disableDrag,
+      drag: !disableDrag,
     },
     combo: {
       drag: true,
@@ -238,7 +239,7 @@ function init(props: GraphinProps, graphDOM: HTMLDivElement, behaviorsMode: Beha
 const initGraph = (props: GraphinProps, graphDOM: HTMLDivElement, behaviorsMode: BehaviorsMode) => {
   const [instance, options] = init(props, graphDOM, behaviorsMode);
 
-  switchLocalRefresh(instance);
+  switchLocalRefresh(instance, false);
   doPan(options.pan, instance);
   doZoom(options.zoom, instance, options.pan);
 
