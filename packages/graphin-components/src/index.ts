@@ -2,3 +2,4 @@ export { default as Toolbar, ToolbarProps, RenderProps } from './components/tool
 export { default as MiniMap } from './components/mini-map';
 export { default as ContextMenu } from './components/context-menu';
 export { default as Legend, LegendProps } from './components/legend';
+export { default as TimeBar } from './components/timebar';

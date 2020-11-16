@@ -90,7 +90,6 @@ function generateInnerBehaviors(options: {
       disable: !options.brush,
       options: {
         trigger: 'shift',
-        includeEdges: false,
       },
     },
     // 点击选择
@@ -102,6 +101,13 @@ function generateInnerBehaviors(options: {
         trigger: 'alt',
       },
     },
+    // 拉索选择
+    // {
+    //   type: 'lasso-select',
+    //   options: {
+    //     trigger: 'ctrl',
+    //   },
+    // },
     // 拖拽节点
     {
       type: 'drag-node',
