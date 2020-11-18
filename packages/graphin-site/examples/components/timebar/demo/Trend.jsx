@@ -7,27 +7,13 @@ import Graphin, { Utils } from '@antv/graphin';
 import { Toolbar, TimeBar } from '@antv/graphin-components';
 
 const App = () => {
-  const [data, setData] = React.useState(Utils.mock(100).circle().graphin());
-
-  for (let i = 0; i < 100; i++) {
-    const id = `node-${i}`;
-    data.nodes.push({
-      id,
-      date: `2020${i}`,
-      value: Math.round(Math.random() * 300),
-    });
-
-    data.edges.push({
-      source: `node-${Math.round(Math.random() * 90)}`,
-      target: `node-${Math.round(Math.random() * 90)}`,
-    });
-  }
+  const [data] = React.useState(Utils.mock(50).random().graphin());
 
   const timeBarData = [];
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 50; i++) {
     timeBarData.push({
-      date: `2020${i}`,
+      date: `${new Date().getFullYear()}${i+1}`,
       value: Math.round(Math.random() * 300),
     });
   }

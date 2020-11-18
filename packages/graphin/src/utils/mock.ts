@@ -177,13 +177,14 @@ export class Mock {
 
   graphin = (): Data => {
     return {
-      nodes: this.nodes.map(node => {
+      nodes: this.nodes.map((node,i) => {
         return {
           id: node.id,
           label: `node-${node.id}`,
           data: node,
           shape: 'CircleNode',
           comboId: node.comboId,
+          date: `${new Date().getFullYear()}${i+1}`,
           style: {
             nodeSize: 24,
           },
