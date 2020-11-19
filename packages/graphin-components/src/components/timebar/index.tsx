@@ -10,20 +10,22 @@ export interface TimeBar {
     width?: number;
     height?: number;
   };
+  timeBarWidth: number;
+  timeBarHeight: number;
+  type: string;
   timeBarData: never[];
 }
 
 const TimeBar: React.FC<TimeBar> = (props) => {
-  const { graph, graphVars = {}, timeBarData } = props;
+  const { graph, graphVars = {}, timeBarWidth, timeBarHeight = 150, type = 'trend', timeBarData } = props;
   const { width = 0 } = graphVars;
-  console.log('time', graph);
   const timebar = new G6.TimeBar({
     x: 0,
     y: 0,
-    width,
-    height: 150,
+    width: timeBarWidth || width,
+    height: timeBarHeight,
     padding: 10,
-    type: 'trend',
+    type,
     trend: {
       data: timeBarData,
     },
