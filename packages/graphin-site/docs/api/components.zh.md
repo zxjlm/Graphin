@@ -107,3 +107,14 @@ Props：
 | color   | string           | **是**   | 小圆点的颜色        |
 | value   | string ｜ number | **是**   | 每个 Item 的 Key 值 |
 | checked | boolean          | 否       | 默认全部选中        |
+
+## \<TimeBar /> 组件
+
+Props：
+
+|   属性   | 类型                                                                                      | 是否必选 | 说明             |
+| -------- | ----------------------------------------------------------------------------------------- | -------- | ---------------- |
+| timeBarWidth  | string                                                                      | **否**   | 时间轴的宽度    |
+| timeBarHeight | string| 否       | 时间轴的高度 |
+| type    | string                                                                                     | 否       | G6 的时间轴类型          |
+| timeBarData     | []                                                       | 是       | timeBarData      |
