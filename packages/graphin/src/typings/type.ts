@@ -200,7 +200,7 @@ export type NodeStyleLabel = Partial<{
   fontSize: number;
   /** 文本在各自方向上的偏移量，主要为了便于调整文本位置 */
   offset: number;
-}>
+}>;
 
 export type NodeStyleIcon = Partial<{
   /** 类型可以为字体图标，可以为网络图片，可以为纯文本 */
@@ -212,7 +212,7 @@ export type NodeStyleIcon = Partial<{
   /** 图标填充颜色 / 文本填充色 / 图片此属性无效 */
   fill: string;
   fontFamily: string;
-}>
+}>;
 
 export type NodeStyleBadge = Partial<{
   /** 放置的位置，ef：LT（left top）左上角 */
@@ -234,8 +234,7 @@ export type NodeStyleBadge = Partial<{
   padding: number;
   // badge 在 x 和 y 方向上的偏移量
   offset: [number, number];
-}>
-
+}>;
 
 export interface NodeStyle {
   /** 节点的主要容器 */
@@ -245,6 +244,10 @@ export interface NodeStyle {
   fill: string;
   /** 包围边颜色 */
   stroke: string;
+
+  opacity: number;
+  shadowColor: string;
+  shadowBlur: number;
 
   /** 节点的文本 */
   label: NodeStyleLabel;
