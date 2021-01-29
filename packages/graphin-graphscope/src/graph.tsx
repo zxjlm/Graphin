@@ -1,20 +1,73 @@
+// @ts-ignore
 import React, { useState, useEffect } from 'react';
-import Graphin, { Behaviors, Utils } from '@antv/graphin';
+import Graphin, { Behaviors, Utils, NodeConfig } from '@antv/graphin';
 import { ContextMenu, FishEye, MiniMap } from '@antv/graphin-components';
 import { message } from 'antd';
-import iconLoader from '@antv/graphin-icons';
+// import iconLoader from '@antv/graphin-icons';
 import { colorSets } from './color';
 import LayoutSelector from './layoutSelector';
+import ElementDetailPanel from './detail';
 
 import CustomMenu from './contextmenu';
 
 import '@antv/graphin-icons/dist/index.css';
+import ClickElement from './events/click';
 
 const { hexToRgbaToHex } = Utils;
 
-const icons = Graphin.registerFontFamily(iconLoader);
+// const icons = Graphin.registerFontFamily(iconLoader);
 
 const { Menu } = ContextMenu;
+
+/** Graphin */
+const { ZoomCanvas, DragNode } = Behaviors;
+
+const nodeSize = 40;
+// const badgeSize = 12;
+
+export interface NodeData extends NodeConfig {
+  id: string;
+  label: string;
+  parentId?: string;
+  degree?: number;
+  nodeType?: string;
+  properties?: {
+    [key: string]: string | number;
+  };
+}
+
+interface EdgeData {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+  edgeType?: string;
+  properties: {
+    [key: string]: string | number;
+  };
+}
+
+export interface GraphData {
+  graphVisId?: string;
+  nodes: NodeData[];
+  edges: EdgeData[];
+}
+
+interface GraphProps {
+  graphDOM: HTMLDivElement;
+  data: GraphData;
+  width: number;
+  height: number;
+  neighbors?: (nodeId: string, degree: number) => void;
+  hasMinimap?: boolean;
+  hasContextMenu?: boolean;
+  hasFishEye?: boolean;
+  hasLayoutSelector?: boolean;
+  zoomCanvas?: boolean;
+  // 节点 label 上显示的字段属性名称
+  nodeLabel?: string;
+  nodeClick?: (model: NodeData, type: string) => void;
+}
 
 const defaultLayout = {
   type: 'graphin-force',
@@ -22,15 +75,16 @@ const defaultLayout = {
     type: 'concentric',
   },
   animation: true,
+  // @ts-ignore
   defSpringLen: (_edge: any, source: any, target: any) => {
     /** 默认返回的是 200 的弹簧长度 */
     /** 如果你要想要产生聚类的效果，可以考虑 根据边两边节点的度数来动态设置边的初始化长度：度数越小，则边越短 */
 
-    const nodeSize = 10;
+    const size = 10;
     const Sdegree = source.data.layout.degree;
     const Tdegree = target.data.layout.degree;
     const minDegree = Math.min(Sdegree, Tdegree);
-    return minDegree < 3 ? nodeSize * 5 : minDegree * nodeSize;
+    return minDegree < 3 ? size * 5 : minDegree * size;
   },
 };
 
@@ -158,33 +212,25 @@ const layouts = [
   },
 ];
 
-/** Graphin */
-const { ZoomCanvas, DragNode } = Behaviors;
+let refreshData: GraphData = null;
 
-const nodeSize = 40;
-// const badgeSize = 12;
+const colorLabelMap: {
+  [key: string]: string;
+} = {};
 
-interface IGraphProps {
-  graphDOM: HTMLDivElement;
-  data: any;
-  width: number;
-  height: number;
-  neighbors?: (nodeId: string, degree: number) => void;
-  hasMinimap?: boolean;
-  // 节点 label 上显示的字段属性名称
-  nodeLabel?: string;
-}
-
-let refreshData: any = null;
-
-const GraphScope: React.FC<IGraphProps> = ({
+const GraphScope: React.FC<GraphProps> = ({
   data,
   neighbors,
   width,
   height,
   graphDOM,
   hasMinimap = true,
+  hasContextMenu = true,
+  hasFishEye = true,
+  hasLayoutSelector = true,
+  zoomCanvas = true,
   nodeLabel = 'id',
+  nodeClick,
 }) => {
   const [state, setState] = useState({
     visible: false,
@@ -192,35 +238,39 @@ const GraphScope: React.FC<IGraphProps> = ({
     data: {},
   });
 
-  const transGraphData = (data: any) => {
-    const nodes = data.nodes.map((node: any, index: number) => {
-      const primaryColor = colorSets[index > 10 ? 0 : index].mainFill;
-      // clusterColorMap.set(node.id, primaryColor);
+  const transGraphData = (originData: GraphData): any => {
+    let labelCount = 0;
+    const nodes = originData.nodes.map((node: NodeData) => {
+      if (!colorLabelMap[node.label]) {
+        labelCount += 1;
+        const primaryColor = colorSets[labelCount > 10 ? 0 : labelCount].mainFill;
+        colorLabelMap[node.label] = primaryColor;
+      }
 
-      const nodes = {
+      const currentNode = {
         ...node,
         type: 'graphin-circle',
         style: {
           keyshape: {
-            fill: hexToRgbaToHex(primaryColor, 0.3),
-            stroke: primaryColor,
+            fill: hexToRgbaToHex(colorLabelMap[node.label], 0.3),
+            stroke: colorLabelMap[node.label],
             size: [nodeSize, nodeSize],
           },
           label: {
-            value: node[nodeLabel],
+            value: node.label,
             fill: hexToRgbaToHex('#000', 0.85),
           },
           halo: {
-            fill: hexToRgbaToHex(primaryColor, 0.1),
-            stroke: primaryColor,
+            fill: hexToRgbaToHex(colorLabelMap[node.label], 0.1),
+            stroke: colorLabelMap[node.label],
           },
-          icon: {
-            fontFamily: 'graphin',
-            type: 'font',
-            value: icons.team,
-            fill: primaryColor,
-            size: nodeSize / 1.6,
-          },
+          // icon: {
+          //   fontFamily: 'graphin',
+          //   type: 'font',
+          //   value: icons.team,
+          //   fill: primaryColor,
+          //   size: nodeSize / 1.6,
+          // },
           // badges: [
           //   {
           //     position: 'RT',
@@ -238,10 +288,10 @@ const GraphScope: React.FC<IGraphProps> = ({
         },
       };
 
-      return nodes;
+      return currentNode;
     });
 
-    const edges = data.edges.map((edge: any) => {
+    const edges = originData.edges.map((edge: EdgeData) => {
       return {
         ...edge,
         label: '',
@@ -271,7 +321,7 @@ const GraphScope: React.FC<IGraphProps> = ({
 
   useEffect(() => {
     const transData = transGraphData(data);
-    setState((preState) => {
+    setState(preState => {
       return {
         ...preState,
         data: transData,
@@ -281,7 +331,7 @@ const GraphScope: React.FC<IGraphProps> = ({
 
   const { visible, layout } = state;
   const handleClose = () => {
-    setState((preState) => {
+    setState(preState => {
       return {
         ...preState,
         visible: false,
@@ -289,7 +339,7 @@ const GraphScope: React.FC<IGraphProps> = ({
     });
   };
   const handleOpen = () => {
-    setState((preState) => {
+    setState(preState => {
       return {
         ...preState,
         visible: true,
@@ -297,7 +347,7 @@ const GraphScope: React.FC<IGraphProps> = ({
     });
   };
   const handleRefresh = () => {
-    setState((preState) => {
+    setState(preState => {
       return {
         ...preState,
         data: refreshData,
@@ -314,8 +364,8 @@ const GraphScope: React.FC<IGraphProps> = ({
   };
 
   const handleChangeLayout = (value: string) => {
-    const currentLayout = layouts.find((item) => item.type === value);
-    setState((preState) => {
+    const currentLayout = layouts.find(item => item.type === value);
+    setState(preState => {
       return {
         ...preState,
         layout: currentLayout as any,
@@ -323,23 +373,54 @@ const GraphScope: React.FC<IGraphProps> = ({
     });
   };
 
+  const [detailInfo, setDetailInfo] = useState({
+    visible: false,
+    data: null,
+    type: null,
+  });
+  const handleClickElement = (model: NodeConfig, type: string) => {
+    if (nodeClick) {
+      nodeClick(model as NodeData, type);
+      setDetailInfo({
+        visible: true,
+        data: model,
+        type,
+      });
+    }
+  };
+
   return (
     <div>
       <Graphin graphDOM={graphDOM} data={state.data as any} layout={layout} width={width} height={height}>
-        <ZoomCanvas enableOptimize />
+        <ZoomCanvas disabled={zoomCanvas} enableOptimize />
+        <ClickElement nodeClick={handleClickElement} />
         <DragNode />
         {hasMinimap && <MiniMap visible options={{ padding: 20, size: [140, 70] }} />}
-        <LayoutSelector onChange={handleChangeLayout} value={state.layout.type} options={layouts} />
-        <ContextMenu style={{ width: 90 }}>
-          <CustomMenu expandNeighbors={expandNeighbors} />
-        </ContextMenu>
-        <ContextMenu bindType="canvas">
-          <Menu bindType="canvas">
-            <Menu.Item onClick={handleOpen}>开启鱼眼</Menu.Item>
-            <Menu.Item onClick={handleRefresh}>重置画布</Menu.Item>
-          </Menu>
-        </ContextMenu>
-        <FishEye options={{ showLabel: false }} visible={visible} handleEscListener={handleClose} />
+        {hasLayoutSelector && (
+          <LayoutSelector onChange={handleChangeLayout} value={state.layout.type} options={layouts} />
+        )}
+        {hasContextMenu && (
+          <>
+            <ContextMenu style={{ width: 90 }}>
+              <CustomMenu expandNeighbors={expandNeighbors} />
+            </ContextMenu>
+            <ContextMenu bindType="canvas">
+              <Menu bindType="canvas">
+                <Menu.Item onClick={handleOpen}>开启鱼眼</Menu.Item>
+                <Menu.Item onClick={handleRefresh}>重置画布</Menu.Item>
+              </Menu>
+            </ContextMenu>
+          </>
+        )}
+        {hasFishEye && <FishEye options={{ showLabel: false }} visible={visible} handleEscListener={handleClose} />}
+        {detailInfo.visible && (
+          <ElementDetailPanel
+            type={detailInfo.type}
+            data={detailInfo.data}
+            close={() => setDetailInfo({ visible: false, data: null, type: '' })}
+            itemId={detailInfo.data.id}
+          />
+        )}
       </Graphin>
     </div>
   );
