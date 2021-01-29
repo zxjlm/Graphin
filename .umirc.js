@@ -79,7 +79,7 @@ export default {
     ['zh-CN', '中文'],
     ['en-US', 'English'],
   ],
-  links: ['https://gw.alipayobjects.com/os/lib/antd/4.6.6/dist/antd.css'],
+  links: ['https://gw.alipayobjects.com/os/lib/antd/4.6.6/dist/antd.dark.css'],
   scripts: [
     'https://gw.alipayobjects.com/os/lib/react/16.13.1/umd/react.development.js',
     'https://gw.alipayobjects.com/os/lib/react-dom/16.13.1/umd/react-dom.development.js',
