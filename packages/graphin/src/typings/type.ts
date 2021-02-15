@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // TODO : remove any type
-import { ThemeType } from '../theme';
 import { Graph } from '@antv/g6';
+import { ThemeType } from '../theme';
 
 export interface UserProperties {
   [key: string]: any;
@@ -18,6 +18,7 @@ export interface RestNode {
   /** 注册元素的名称 */
   type: string;
   /**  用户的数据 */
+  // REVIEW kill any
   data: any;
   /** 坐标X */
   x: number;
@@ -29,6 +30,7 @@ export interface RestNode {
   status: Partial<ElementStatus>;
   /** 布局的相关信息 */
   layout: {
+    // REVIEW 只有这几个参数么？
     /** 度数 */
     degree?: number;
     /** 力导参数 */
@@ -89,6 +91,7 @@ export interface GraphinTreeData {
   status?: Partial<ElementStatus>;
 }
 
+// REVIEW Tree Graph 的Option 和 Graph 的相同么？
 export interface GraphinProps {
   /** user custom styles */
   style?: React.CSSProperties;
@@ -101,6 +104,7 @@ export interface GraphinProps {
   /** 模式 G6的options.modes,建议使用 behaviors components 代替 */
   modes?: any;
 
+  // REVIEW 这个接口好奇怪啊，用事件不行么？
   /** 布局后的回调函数 */
   handleAfterLayout?: (graph: Graph) => void;
 
@@ -174,6 +178,7 @@ export interface GraphinProps {
 export interface IUserNode extends BaseNode, Partial<RestNode>, UserProperties {}
 export interface GraphinNode extends BaseNode, RestNode, UserProperties {}
 
+// REVIEW 配置项有点多啊
 export interface EdgeStyle {
   /** 边的类型 */
   type?: 'graphin-line';
@@ -440,6 +445,7 @@ export type NodeStyleHalo = Partial<
 
 export interface NodeShapeStyle {
   /** 节点的主要容器 */
+  // REVIEW 拼写错误
   keyshape: NodeStyleKeyShape;
   /** 节点的文本 */
   label: NodeStyleLabel;

@@ -10,6 +10,7 @@ export interface ComboTheme {
   /** 主要颜色 */
   primaryComboColor: string;
   /** 主题模式： 'light' | 'dark' */
+  // REVIEW 建议支持多主题，而不仅仅是light dark
   mode: 'light' | 'dark';
 }
 

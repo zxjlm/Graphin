@@ -1,30 +1,28 @@
-import React, { ErrorInfo } from 'react';
+// REVIEW 这个文件也是包了太多东西进来，以需要拆分出去
 // todo ,G6@unpack版本将规范类型的输出
-import G6, { Graph as IGraph, GraphOptions, GraphData, TreeGraphData } from '@antv/g6';
-import { cloneDeep } from 'lodash';
+import G6, { Graph as IGraph, GraphData, GraphOptions, TreeGraphData } from '@antv/g6';
 import { deepMix } from '@antv/util';
-
-/** utils */
-// import shallowEqual from './utils/shallowEqual';
-import deepEqual from './utils/deepEqual';
-
-import './index.less';
-
-/** Context */
-import GraphinContext from './GraphinContext';
-/** 内置 Behaviros */
-import Behaviors from './behaviors';
-/** 内置布局 */
-import LayoutController from './layout';
+// REVIEW 考虑一下 import cloneDeep from 'lodash/cloneDeep'的写法？一定不会打包整个lodash到编译后的文件中
+import { cloneDeep } from 'lodash';
+import React, { ErrorInfo } from 'react';
 /** 内置API */
 import ApiController from './apis';
 import { ApisType } from './apis/types';
-
-/** types  */
-import { GraphinProps, IconLoader, GraphinData, GraphinTreeData } from './typings/type';
-import { TREE_LAYOUTS, DEFAULT_TREE_LATOUT_OPTIONS } from './consts';
-
+/** 内置 Behaviros */
+import Behaviors from './behaviors';
+// REVIEW 拼写错误, DEFAULT_TREE_LATOUT_OPTIONS => DEFAULT_TREE_LAYOUT_OPTIONS, consts => constants
+import { DEFAULT_TREE_LATOUT_OPTIONS, TREE_LAYOUTS } from './consts';
+/** Context */
+import GraphinContext from './GraphinContext';
+import './index.less';
+/** 内置布局 */
+import LayoutController from './layout';
 import { getDefaultStyleByTheme, ThemeData } from './theme/index';
+/** types  */
+import { GraphinData, GraphinProps, GraphinTreeData, IconLoader } from './typings/type';
+/** utils */
+// import shallowEqual from './utils/shallowEqual';
+import deepEqual from './utils/deepEqual';
 
 const { DragCanvas, ZoomCanvas, DragNode, DragCombo, ClickSelect, BrushSelect, ResizeCanvas, Hoverable } = Behaviors;
 
@@ -40,11 +38,13 @@ export interface GraphinState {
   };
 }
 
+// REVIEW kill any
 export interface RegisterFunction {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (name: string, options: { [key: string]: any }, extendName?: string): void;
 }
 
+// REVIEW 做一下访问作用域限制，private\public\protected
 class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
   static registerNode: RegisterFunction = (nodeName, options, extendedNodeName) => {
     G6.registerNode(nodeName, options, extendedNodeName);
@@ -58,11 +58,13 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     G6.registerCombo(comboName, options, extendedComboName);
   };
 
+  // REVIEW kill any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static registerBehavior(behaviorName: string, behavior: any) {
     G6.registerBehavior(behaviorName, behavior);
   }
 
+  // REVIEW: 这里暴露了registerFontFamily, index为什么还要单独暴露一个接口出去？
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static registerFontFamily(iconLoader: IconLoader): { [icon: string]: any } {
     /**  注册 font icon */
@@ -75,6 +77,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       };
     });
 
+    // REVIEW Proxy用要小心兼容性问题
     return new Proxy(icons, {
       get: (target, propKey: string) => {
         const matchIcon = target.find(icon => {
@@ -89,6 +92,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     });
   }
 
+  // REVIEW kill any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static registerLayout(layoutName: string, layout: any) {
     G6.registerLayout(layoutName, layout);
@@ -132,14 +136,18 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     } = props;
 
     this.data = data;
+    // REVIEW 这里的判断有点tricky, 还不如显示让用户告诉你，它传进来的数据是tree data还是graph data
     this.isTree =
       Boolean(props.data && (props.data as GraphinTreeData).children) ||
       TREE_LAYOUTS.indexOf(String(layout && layout.type)) !== -1;
+    // REVIEW kill cast convert
     this.graph = {} as IGraph;
     this.height = Number(height);
     this.width = Number(width);
 
+    // REVIEW kill cast convert
     this.theme = {} as ThemeData;
+    // REVIEW kill cast convert
     this.apis = {} as ApisType;
 
     this.state = {
@@ -152,25 +160,31 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     };
 
     this.options = { ...otherOptions } as GraphOptions;
+    // REVIEW kill cast convert
     this.layout = {} as LayoutController;
   }
 
+  // REVIEW remove console.log, or enable debug by flag
   initData = (data: GraphinProps['data']) => {
     if ((data as GraphinTreeData).children) {
       this.isTree = true;
     }
     console.time('clone data');
+    // REVIEW 这里一定要做cloneDeep么？感觉是不是可以只deep graphin需要的字段，其他字段还是引用的方式
     this.data = cloneDeep(data);
     console.timeEnd('clone data');
   };
 
+  // REVIEW 这个方法做了太多事情，是不是考虑拆分到不同的controller中init
   initGraphInstance = () => {
+    // REVIEW 哇……
     const {
       theme,
       data,
       layout,
       width,
       height,
+      // REVIEW 这几个default字段讨论一下
       defaultCombo,
       defaultEdge,
       defaultNode,
@@ -183,6 +197,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       ...otherOptions
     } = this.props;
     if (modes.default.length > 0) {
+      // REVIEW 拼写错误
       // TODO :给用户正确的引导，推荐使用Graphin的Bheaviors组件
       console.info('%c suggestion: you can use @antv/graphin Behaviros components', 'color:lightgreen');
     }
@@ -208,8 +223,10 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     // @ts-ignore
     this.theme = themeResult as ThemeData;
     /** graph type */
+    // REVIEW 看到好多这种类型的判断了
     this.isTree =
       Boolean((data as GraphinTreeData).children) || TREE_LAYOUTS.indexOf(String(layout && layout.type)) !== -1;
+    // REVIEW 这个判断没有看懂
     const isGraphinNodeType = defaultNode?.type === undefined || defaultNode?.type === defaultNodeStyle.type;
     const isGraphinEdgeType = defaultEdge?.type === undefined || defaultEdge?.type === defaultEdgeStyle.type;
 
@@ -264,6 +281,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     /** 初始化状态 */
     this.initStatus();
     /** 生成API */
+    // REVIEW 在这里才ready, 会不会存在用户在这之前获取api的情况？至少这里应该有个事件/回掉告知用户，api已经ready
     this.apis = ApiController(this.graph);
     /** 设置Context */
     this.setState({
@@ -288,6 +306,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
    * 组件更新的时候
    * @param prevProps
    */
+  // REVIEW: 嗯？
   updateOptions = () => {
     const { ...options } = this.props;
     return options;
@@ -295,6 +314,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
 
   /** 初始化状态 */
   initStatus = () => {
+    // REVIEW tree模式不需要初始化状态么？
     if (!this.isTree) {
       const { data } = this.props;
       const { nodes = [], edges = [] } = data as GraphinData;
@@ -317,9 +337,11 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     }
   };
 
+  // REVIEW 1. remove console log 2. 功能做一下拆分吧
   componentDidUpdate(prevProps: GraphinProps) {
     console.time('did-update');
 
+    // REVIEW 这里应该还是存在性能问题把？考虑一下只做第一层比较，或者使用指纹技术（MD5)？
     const isDataChange = this.shouldUpdate(prevProps, 'data');
     const isLayoutChange = this.shouldUpdate(prevProps, 'layout');
     const isOptionsChange = this.shouldUpdate(prevProps, 'options');

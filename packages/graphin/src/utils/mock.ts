@@ -1,7 +1,6 @@
+import { GraphinData, GraphinTreeData, IUserEdge, IUserNode } from '../typings/type';
 import Tree from './Tree';
 import walk from './walk';
-
-import { IUserNode, IUserEdge, GraphinData, GraphinTreeData } from '../typings/type';
 
 const defaultOptions = {
   /** 节点 */
@@ -11,6 +10,7 @@ const defaultOptions = {
 
 type OptionType = typeof defaultOptions;
 
+// REVIEW mock数据可以考虑从库里拆出去
 /**
  * 1,mock data with edges,nodes
  * 2.mock nodes properties
