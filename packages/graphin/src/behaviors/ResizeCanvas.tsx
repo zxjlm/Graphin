@@ -1,38 +1,47 @@
+import { debounce } from '@antv/util';
 import * as React from 'react';
 import GraphinContext from '../GraphinContext';
-import { debounce } from '@antv/util';
 
+/**
+ * 监听窗口Resize Props
+ *
+ * @export
+ * @interface ResizeCanvasProps
+ */
 export interface ResizeCanvasProps {
-  graphDOM: HTMLDivElement;
+  target: HTMLDivElement | null;
 }
 
-const ResizeCanvas: React.FunctionComponent<ResizeCanvasProps> = props => {
-  const { graphDOM } = props;
+/**
+ * 监听窗口Resize
+ *
+ * @param {ResizeCanvasProps} props
+ * @returns
+ */
+function ResizeCanvas(props: ResizeCanvasProps) {
+  const { target } = props;
   const graphin = React.useContext(GraphinContext);
   React.useEffect(() => {
-    const { graph } = graphin;
+    if (!props.target) return;
+    const onResize = debounce(() => {
+      const { clientWidth, clientHeight } = target as HTMLDivElement;
 
-    /** 内置 resize */
-    const handleResizeEvent = debounce(() => {
-      const { clientWidth, clientHeight } = graphDOM;
-      graph.set('width', clientWidth);
-      graph.set('height', clientHeight);
-      const canvas = graph.get('canvas');
-      if (canvas) {
-        canvas.changeSize(clientWidth, clientHeight);
-        graph.autoPaint();
-      }
+      graphin.graph.set('width', clientWidth);
+      graphin.graph.set('height', clientHeight);
+
+      const canvas = graphin.graph.get('canvas');
+      if (!canvas) return;
+
+      canvas.changeSize(clientWidth, clientHeight);
+      graphin.graph.autoPaint();
     }, 200);
-
-    /** 内置 drag force node */
-
-    window.addEventListener('resize', handleResizeEvent, false);
+    window.addEventListener('resize', onResize, false);
     return () => {
-      window.removeEventListener('resize', handleResizeEvent, false);
+      window.removeEventListener('resize', onResize, false);
     };
-  }, []);
+  }, [target]);
 
   return null;
-};
+}
 
 export default ResizeCanvas;

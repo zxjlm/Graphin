@@ -1,32 +1,27 @@
-import React, { ErrorInfo } from 'react';
 // todo ,G6@unpack版本将规范类型的输出
-import G6, { Graph as IGraph, GraphOptions, GraphData, TreeGraphData } from '@antv/g6';
+import G6, { Graph as IGraph, GraphData, GraphOptions, TreeGraphData } from '@antv/g6';
 import { deepMix } from '@antv/util';
-/** utils */
-// import shallowEqual from './utils/shallowEqual';
-import deepEqual from './utils/deepEqual';
-
-import cloneDeep from 'lodash-es/cloneDeep';
-
-import './index.less';
-
-/** Context */
-import GraphinContext from './GraphinContext';
-/** 内置 Behaviors */
-import Behaviors from './behaviors';
-/** 内置布局 */
-import LayoutController from './layout';
+import cloneDeep from 'lodash/cloneDeep';
+import React, { ErrorInfo } from 'react';
 /** 内置API */
 import ApiController from './apis';
 import { ApisType } from './apis/types';
-
-/** types  */
-import { GraphinProps, IconLoader, GraphinData, GraphinTreeData } from './typings/type';
-import { TREE_LAYOUTS, DEFAULT_TREE_LATOUT_OPTIONS } from './consts';
-
+/** 内置 Behaviors */
+import { DEFAULT_TREE_LAYOUT_OPTIONS } from './consts';
+import { GraphinComponentsContainer } from './GraphinComponentsContainer';
+/** Context */
+import GraphinContext from './GraphinContext';
+import './index.less';
+/** 内置布局 */
+import LayoutController from './layout';
+import registerFontFamily from './register/FontFamilyRegister';
 import { getDefaultStyleByTheme, ThemeData } from './theme/index';
-
-const { DragCanvas, ZoomCanvas, DragNode, DragCombo, ClickSelect, BrushSelect, ResizeCanvas, Hoverable } = Behaviors;
+/** types  */
+import { GraphinData, GraphinProps, GraphinTreeData, IconLoader } from './typings/type';
+import { isGraphType, isTreeType } from './utils/data';
+import { warn } from './utils/debug';
+/** utils */
+import deepEqual from './utils/deepEqual';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DiffValue = any;
@@ -64,30 +59,8 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     G6.registerBehavior(behaviorName, behavior);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static registerFontFamily(iconLoader: IconLoader): { [icon: string]: any } {
-    /**  注册 font icon */
-    const iconFont = iconLoader();
-    const { glyphs, fontFamily } = iconFont;
-    const icons = glyphs.map(item => {
-      return {
-        name: item.name,
-        unicode: String.fromCodePoint(item.unicode_decimal),
-      };
-    });
-
-    return new Proxy(icons, {
-      get: (target, propKey: string) => {
-        const matchIcon = target.find(icon => {
-          return icon.name === propKey;
-        });
-        if (!matchIcon) {
-          console.error(`%c fontFamily:${fontFamily},does not found ${propKey} icon`);
-          return '';
-        }
-        return matchIcon?.unicode;
-      },
-    });
+  static registerFontFamily(iconLoader: IconLoader) {
+    return registerFontFamily(iconLoader);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,8 +68,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     G6.registerLayout(layoutName, layout);
   }
 
-  /** Graph的DOM */
-  graphDOM: HTMLDivElement | null = null;
+  private container = React.createRef<HTMLDivElement>();
 
   /** G6 instance */
   graph: IGraph;
@@ -108,9 +80,6 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
 
   height: number;
 
-  /** 是否为 Tree Graph */
-  isTree: boolean;
-
   /** G6实例中的 nodes,edges,combos 的 model，会比props.data中多一些引用赋值产生的属性，比如node中的 x,y */
   data: GraphinTreeData | GraphinData | undefined;
 
@@ -119,6 +88,16 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
   apis: ApisType;
 
   theme: ThemeData;
+
+  private get type() {
+    const { data, layout } = this.props;
+    if (isTreeType(data as GraphinTreeData, layout)) {
+      return 'tree';
+    }
+    if (isGraphType(data, layout)) {
+      return 'graph';
+    }
+  }
 
   constructor(props: GraphinProps) {
     super(props);
@@ -133,9 +112,6 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     } = props;
 
     this.data = data;
-    this.isTree =
-      Boolean(props.data && (props.data as GraphinTreeData).children) ||
-      TREE_LAYOUTS.indexOf(String(layout && layout.type)) !== -1;
     this.graph = {} as IGraph;
     this.height = Number(height);
     this.width = Number(width);
@@ -156,12 +132,9 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     };
   }
 
-  initData = (data: GraphinProps['data']) => {
-    if ((data as GraphinTreeData).children) {
-      this.isTree = true;
-    }
+  initData(data: GraphinProps['data']) {
     this.data = cloneDeep(data);
-  };
+  }
 
   initGraphInstance = () => {
     const {
@@ -206,9 +179,6 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       ...otherTheme
     } = themeResult;
 
-    /** graph type */
-    this.isTree =
-      Boolean((data as GraphinTreeData).children) || TREE_LAYOUTS.indexOf(String(layout && layout.type)) !== -1;
     const isGraphinNodeType = defaultNode?.type === undefined || defaultNode?.type === defaultNodeStyle.type;
     const isGraphinEdgeType = defaultEdge?.type === undefined || defaultEdge?.type === defaultEdgeStyle.type;
 
@@ -237,7 +207,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     } as GraphOptions;
 
     if (this.isTree) {
-      this.options.layout = layout || DEFAULT_TREE_LATOUT_OPTIONS;
+      this.options.layout = layout || DEFAULT_TREE_LAYOUT_OPTIONS;
       this.graph = new G6.TreeGraph(this.options);
     } else {
       this.graph = new G6.Graph(this.options);
@@ -437,53 +407,29 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
 
   render() {
     const { isReady } = this.state;
-    const { modes, style } = this.props;
+    const { style } = this.props;
 
     return (
       <GraphinContext.Provider value={this.state.context}>
         <div id="graphin-container">
-          <div
-            data-testid="custom-element"
-            className="graphin-core"
-            ref={node => {
-              this.graphDOM = node;
-            }}
-            style={{ background: this.theme?.background, ...style }}
-          />
-          <div className="graphin-components">
-            {isReady && (
-              <>
-                {
-                  /** modes 不存在的时候，才启动默认的behaviors，否则会覆盖用户自己传入的 */
-                  !modes && (
-                    <>
-                      {/* 拖拽画布 */}
-                      <DragCanvas />
-                      {/* 缩放画布 */}
-                      <ZoomCanvas />
-                      {/* 拖拽节点 */}
-                      <DragNode />
-                      {/* 点击节点 */}
-                      <DragCombo />
-                      {/* 点击节点 */}
-                      <ClickSelect />
-                      {/* 圈选节点 */}
-                      <BrushSelect />
-                    </>
-                  )
-                }
-
-                {/** resize 画布 */}
-                <ResizeCanvas graphDOM={this.graphDOM as HTMLDivElement} />
-                <Hoverable bindType="node" />
-                {/* <Hoverable bindType="edge" /> */}
-                {this.props.children}
-              </>
-            )}
-          </div>
+          <div className="graphin-core" ref={this.container} style={{ background: this.theme?.background, ...style }} />
+          <GraphinComponentsContainer {...this.props} isReady={isReady} target={this.container.current}>
+            {this.props.children}
+          </GraphinComponentsContainer>
         </div>
       </GraphinContext.Provider>
     );
   }
+
+  get graphDOM() {
+    warn('core')('graphin.graphDom is deprecated.');
+    return this.container.current;
+  }
+
+  get isTree() {
+    warn('core')('grahin.isTree is deprecated.');
+    return this.type === 'tree';
+  }
 }
+
 export default Graphin;

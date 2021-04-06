@@ -1,4 +1,4 @@
-export const DEFAULT_TREE_LATOUT_OPTIONS = {
+export const DEFAULT_TREE_LAYOUT_OPTIONS = {
   type: 'compactBox',
   direction: 'LR',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

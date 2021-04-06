@@ -27,7 +27,7 @@ const defaultConfig = {
 
 export type IDragCanvasProps = Partial<typeof defaultConfig>;
 
-const BurshSelect: React.FunctionComponent<IDragCanvasProps> = props => {
+const BrushSelect: React.FunctionComponent<IDragCanvasProps> = props => {
   useBehaviorHook({
     type: 'brush-select',
     userProps: props,
@@ -36,4 +36,4 @@ const BurshSelect: React.FunctionComponent<IDragCanvasProps> = props => {
   return null;
 };
 
-export default BurshSelect;
+export default BrushSelect;
